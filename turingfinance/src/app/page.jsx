@@ -11,16 +11,25 @@ export default function Home() {
   const [msg, setMsg] = useState('Olá! Coloque o input.');
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(false);
-  const [hist, setHist] = useState();
+  const [plot, setPlot] = useState();
 
   const handleBuscar = (data) => {
     setLoading(true)
     setMsg("Buscando...")
     setErro(false)
 
-    axios.get('http://localhost:8000/api/histogram', {params: data})
+    console.log(data)
+    let endpoints = {
+      1: 'histogram',
+      2: 'rolling',
+    }
+
+    let endpoint = data['graph']
+    delete data['graph']
+
+    axios.get(`http://localhost:8000/api/${endpoints[endpoint]}`, {params: data})
     .then((res) => {
-      setHist(JSON.parse(res.data.hist))
+      setPlot(JSON.parse(res.data.plot))
       setMsg("Gráfico calculado!")
     })
     .catch((er) => {
@@ -32,14 +41,19 @@ export default function Home() {
     })
   }
 
-  useEffect(() => {
-    console.log('New hist:', hist?.data)
-  }, [hist])
-
   return (
     <main className="grid grid-cols-1 justify-center md:grid-cols-2 min-h-[95vh] place-items-center items-center flex-wrap pt-5 flex-col">
       <div className="w-full max-w-xs">
         <form onSubmit={handleSubmit(handleBuscar)} className="bg-white shadow-md rounded px-8 pt-6 pb-8 mb-4">
+          <div className="mb-4">
+            <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="graph">
+              Gráfico
+            </label>
+            <select className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:shadow-outline" type="text" placeholder="ITUB3.SA" {...register("graph")} name="graph" id="graph">
+              <option value="1">Histograma de Retornos Diários</option>
+              <option value="2">Rolling STD</option>
+            </select>
+          </div>
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="ticker">
               Ticker
@@ -67,7 +81,7 @@ export default function Home() {
         <p>{msg}</p>
       </div>
       <div className='max-w-full'>
-        <Plot className='max-w-full' config={{responsive:true}} data={hist?.data || []} layout={hist?.layout || []}/>
+        <Plot className='max-w-full' config={{responsive:true}} data={plot?.data || []} layout={plot?.layout || []}/>
       </div>
     </main>
   )
