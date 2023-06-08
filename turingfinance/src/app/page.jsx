@@ -12,6 +12,17 @@ export default function Home() {
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(false);
   const [plot, setPlot] = useState();
+  const [tickers, setTickers] = useState([]);
+
+  const handleAddTicker = () => {
+    const tickerInput = document.getElementById('ticker').value;
+    setTickers([...tickers, tickerInput]);
+    document.getElementById('ticker').value = ''; // clear the input field
+  };
+
+  const handleClearTickers = () => {
+    setTickers([]);
+  };
 
   const handleBuscar = (data) => {
     setLoading(true)
@@ -27,6 +38,11 @@ export default function Home() {
     let endpoint = data['graph']
     delete data['graph']
 
+  // Convert ticker string to array
+  delete data['ticker']
+
+  tickers.forEach(ticker => {
+    data['ticker'] = tickers.join(',');  // Set the ticker value
     axios.get(`http://localhost:8000/api/${endpoints[endpoint]}`, {params: data})
     .then((res) => {
       setPlot(JSON.parse(res.data.plot))
@@ -39,8 +55,9 @@ export default function Home() {
     .finally(() => {
       setLoading(false)
     })
+  })
   }
-
+  
   return (
     <main className="grid grid-cols-1 justify-center md:grid-cols-2 min-h-[95vh] place-items-center items-center flex-wrap pt-5 flex-col">
       <div className="w-full max-w-xs">
@@ -58,7 +75,17 @@ export default function Home() {
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="ticker">
               Ticker
             </label>
-            <input {...register("ticker")} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" id="ticker" type="text" placeholder="ITUB3.SA"/>
+            <input id="ticker" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" type="text" placeholder="ITUB3.SA"/>
+            <button onClick={handleAddTicker} className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-2" type="button">
+              Adicionar Ticker
+            </button>
+            <button onClick={handleClearTickers} className="bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline mt-2" type="button">
+              Limpar Tickers
+            </button>
+            <div>
+              <h3>Tickers selecionados:</h3>
+              {tickers.map((ticker, index) => <p key={index}>{ticker}</p>)}
+            </div>
           </div>
           <div className="mb-6">
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="ini_date">
@@ -81,7 +108,7 @@ export default function Home() {
         <p>{msg}</p>
       </div>
       <div className='max-w-full'>
-        <Plot className='max-w-full' config={{responsive:true}} data={plot?.data || []} layout={plot?.layout || []}/>
+        <Plot className='max-w-full' config={{responsive:false}} data={plot?.data || []} layout={plot?.layout || []}/>
       </div>
     </main>
   )
