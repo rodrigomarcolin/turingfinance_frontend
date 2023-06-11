@@ -11,13 +11,13 @@ export default function Home() {
   const [msg, setMsg] = useState('Olá! Coloque o input.');
   const [loading, setLoading] = useState(false);
   const [erro, setErro] = useState(false);
-  const [plot, setPlot] = useState();
+  const [plots, setPlots] = useState([]);
   const [tickers, setTickers] = useState([]);
 
   const handleAddTicker = () => {
     const tickerInput = document.getElementById('ticker').value;
     setTickers([...tickers, tickerInput]);
-    document.getElementById('ticker').value = ''; // clear the input field
+    document.getElementById('ticker').value = '';
   };
 
   const handleClearTickers = () => {
@@ -25,38 +25,41 @@ export default function Home() {
   };
 
   const handleBuscar = (data) => {
-    setLoading(true)
-    setMsg("Buscando...")
-    setErro(false)
+    setLoading(true);
+    setMsg("Buscando...");
+    setErro(false);
+    setPlots([]);
 
-    console.log(data)
-    let endpoints = {
+    const endpoints = {
       1: 'histogram',
       2: 'rolling',
-    }
+    };
 
-    let endpoint = data['graph']
-    delete data['graph']
+    // Remove the 'graph' field from data, as we're using it separately
+    const graphs = data['graph'];
+    delete data['graph'];
 
-  // Convert ticker string to array
-  delete data['ticker']
+    // Convert ticker string to array
+    delete data['ticker'];
 
-  tickers.forEach(ticker => {
-    data['ticker'] = tickers.join(',');  // Set the ticker value
-    axios.get(`http://localhost:8000/api/${endpoints[endpoint]}`, {params: data})
-    .then((res) => {
-      setPlot(JSON.parse(res.data.plot))
-      setMsg("Gráfico calculado!")
-    })
-    .catch((er) => {
-      setErro(true)
-      setMsg("Erro! Seu input está correto?")
-    })
-    .finally(() => {
-      setLoading(false)
-    })
-  })
-  }
+    tickers.forEach(ticker => {
+      data['ticker'] = tickers.join(',');
+      graphs.forEach(graph => {
+        axios.get(`http://localhost:8000/api/${endpoints[graph]}`, {params: data})
+          .then((res) => {
+            setPlots(oldPlots => [...oldPlots, JSON.parse(res.data.plot)]);
+            setMsg("Gráfico calculado!");
+          })
+          .catch((er) => {
+            setErro(true);
+            setMsg("Erro! Seu input está correto?");
+          })
+          .finally(() => {
+            setLoading(false);
+          });
+      });
+    });
+  };
   
   return (
     <main className="grid grid-cols-1 justify-center md:grid-cols-2 min-h-[95vh] place-items-center items-center flex-wrap pt-5 flex-col">
@@ -66,10 +69,18 @@ export default function Home() {
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="graph">
               Gráfico
             </label>
-            <select className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:shadow-outline" type="text" placeholder="ITUB3.SA" {...register("graph")} name="graph" id="graph">
-              <option value="1">Histograma de Retornos Diários</option>
-              <option value="2">Rolling STD</option>
-            </select>
+            <div>
+              <label>
+                <input type="checkbox" {...register("graph")} value="1" />
+                Histograma de Retornos Diários
+              </label>
+            </div>
+            <div>
+              <label>
+                <input type="checkbox" {...register("graph")} value="2" />
+                Rolling STD
+              </label>
+            </div>
           </div>
           <div className="mb-4">
             <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="ticker">
@@ -108,7 +119,9 @@ export default function Home() {
         <p>{msg}</p>
       </div>
       <div className='max-w-full'>
-        <Plot className='max-w-full' config={{responsive:false}} data={plot?.data || []} layout={plot?.layout || []}/>
+        {plots.map((plot, index) => (
+          <Plot key={index} className='max-w-full' config={{responsive:false}} data={plot?.data || []} layout={plot?.layout || []}/>
+        ))}
       </div>
     </main>
   )
