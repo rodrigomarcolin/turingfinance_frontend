@@ -42,7 +42,6 @@ export default function Home() {
     // Convert ticker string to array
     delete data['ticker'];
 
-    tickers.forEach(ticker => {
       data['ticker'] = tickers.join(',');
       graphs.forEach(graph => {
         axios.get(`http://localhost:8000/api/${endpoints[graph]}`, {params: data})
@@ -58,7 +57,6 @@ export default function Home() {
             setLoading(false);
           });
       });
-    });
   };
   
   return (
